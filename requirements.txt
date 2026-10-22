@@ -1,0 +1,11 @@
+gdown
+jupyter
+lightning[pytorch-extra]
+matplotlib
+numpy
+scikit-learn
+scipy
+tensorboard
+torch
+torchaudio
+torchvision

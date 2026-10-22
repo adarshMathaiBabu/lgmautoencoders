@@ -1,0 +1,137 @@
+seed_everything: true
+trainer:
+  accelerator: auto
+  strategy: auto
+  devices: auto
+  num_nodes: 1
+  # CRITICAL here is where you set mixed precision!! try "16-mixed"
+  precision: null
+  logger:
+    class_path: lightning.pytorch.loggers.TensorBoardLogger
+    # CRITICAL set a proper directory and name
+    # you can also overwrite the "version:" field if you don't like the default numbering
+    init_args:
+      save_dir: "lightning_logs/autoencoder/mnist"
+      name: "baseline"
+      default_hp_metric: false
+
+  # CRITICAL set sensible intervals for these callbacks (every_n_epochs)
+  callbacks:
+    - lgm.callbacks.FitInfo
+    - lgm.callbacks.HyperParamLogger
+    - lightning.pytorch.callbacks.LearningRateMonitor
+    - class_path: lightning.pytorch.callbacks.ModelSummary
+      init_args:
+        max_depth: 2
+    - class_path: lgm.callbacks.ReconstructionLogging
+      init_args:
+        config:
+          every_n_epochs: 10
+    - class_path: lgm.callbacks.BestCheckpoint
+      init_args:
+        filename: "{epoch}"
+        every_n_epochs: 1
+        save_top_k: 1
+        save_last: true
+        monitor: "val_reconstruction_loss"
+        mode: "min"
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        filename: "{epoch}"
+        every_n_epochs: 1
+        save_last: true
+  
+  fast_dev_run: false
+  # CRITICAL how long to train!
+  max_epochs: 100
+  min_epochs: null
+  min_steps: null
+  max_time: null
+  limit_train_batches: null
+  limit_val_batches: null
+  limit_test_batches: null
+  limit_predict_batches: null
+  overfit_batches: 0.0
+  val_check_interval: null
+  check_val_every_n_epoch: 1
+  num_sanity_val_steps: null
+  log_every_n_steps: 100
+  enable_checkpointing: null
+  enable_progress_bar: null
+  enable_model_summary: null
+  accumulate_grad_batches: 1
+  gradient_clip_val: null
+  gradient_clip_algorithm: null
+  deterministic: null
+  benchmark: true
+  inference_mode: true
+  use_distributed_sampler: true
+  profiler: null
+  detect_anomaly: false
+  barebones: false
+  plugins: null
+  sync_batchnorm: false
+  reload_dataloaders_every_n_epochs: 0
+  default_root_dir: null
+  enable_autolog_hparams: true
+  model_registry: null
+
+# CRITICAL model definition! this is actually the *LightningModule*, so it includes
+# - training
+# - model architecture
+# this is a bit cumbersome and can be hard to read due to all the indentation.
+# get used to this ASAP!
+model:
+  class_path: lgm.models.autoencoder.AETrainingModule
+  init_args:
+    scale_multiplier: 256
+    # CRITICAL actual model architecture is here
+    model:
+      class_path: lgm.models.autoencoder.Autoencoder
+      init_args:
+        likelihood: 
+          class_path: lgm.models.autoencoder.likelihoods.GaussianFixedSigma
+          init_args:
+            sigma: null
+        enc_dec_config:
+          input_shape: [1, 32, 32]
+          latent_dim: 8
+          style: "fc"
+          # NOTE dataclasses are parsed directly, without class_path or init_args
+          body_config:
+            blocks_per_level: [2, 2, 1, 1]
+            level_filters: [24, 48, 96, 192]
+          # using default block config. if you want to change it, uncomment and add parameter values
+          #block_config:
+            #depthwise: true  # for example
+
+    # CRITICAL optimizer configuration
+    optimization_config:
+      # we only have to override non-default values
+      # BUT it can be better to have them here explicitly anyway, especially key parameters like
+      # learning rate!
+      optimizer: 
+        class_path: lgm.optimizers.AdamWConfig
+        init_args:
+          lr: 0.001
+          weight_decay: 0.0
+      scheduler: lgm.optimizers.CosineWarmupConfig
+
+# CRITICAL dataset and loader parameters
+# we use UniformDequantize to add noise to the data, since otherwise the model can "cheat" with
+# continuous likelihoods by piling probability density on the "discrete" data values (since images
+# are stored as uint8, there are only 256 unique values)
+data:
+  class_path: lgm.data.ImageDataModule
+  init_args:
+    dataset: "mnist"
+    batch_size: 128
+    num_workers: 12
+    additional_transforms:
+      - lgm.data.UniformDequantize
+
+# CRITICAL compile is set to true here, for debugging or if it just doesn't work for you, turn it off!
+compile: true
+matmul_high: true
+ckpt_path: null
+weights_only: null
