@@ -87,6 +87,7 @@ class AETrainingModule(TrainingModuleBase[Autoencoder]):
         reconstruction_loss = self.reconstruction_loss_fn(output_batch, input_batch)
 
         # the below just for show :) the loss above is sufficient for training!
+        # this only becomes relevant once we want to link reconstruction losses to data likelihoods!
         with torch.inference_mode():
             nll = self.model.likelihood.nll(output_batch, input_batch)
             nll = rescale_likelihood(nll,

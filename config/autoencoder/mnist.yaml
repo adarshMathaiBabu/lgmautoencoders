@@ -84,15 +84,11 @@ trainer:
 model:
   class_path: lgm.models.autoencoder.AETrainingModule
   init_args:
-    scale_multiplier: 256
     # CRITICAL actual model architecture is here
     model:
       class_path: lgm.models.autoencoder.Autoencoder
       init_args:
-        likelihood: 
-          class_path: lgm.models.autoencoder.likelihoods.GaussianFixedSigma
-          init_args:
-            sigma: null
+        likelihood: lgm.models.autoencoder.likelihoods.MeanSquaredError
         enc_dec_config:
           input_shape: [1, 32, 32]
           latent_dim: 8

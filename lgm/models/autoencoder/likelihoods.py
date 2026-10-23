@@ -84,6 +84,26 @@ class Likelihood(nn.Module, ABC):
         """
 
 
+class MeanSquaredError(Likelihood):
+    """Dummy "likelihood" that just computes squared error.
+    
+    This is NOT valid for proper probabilistic modeling, but can serve as a simple loss to train
+    basic autoencoders.
+    """
+    n_parameters: ClassVar[int] = 1
+
+    @override
+    def nll(self,
+            outputs: DataBatchFloat,
+            targets: DataBatchFloat) -> ScalarFloat:
+        return ((outputs - targets)**2).mean()
+
+    @override
+    def expected_value(self,
+                       parameters: DataBatchFloat) -> DataBatchFloat:
+        return parameters
+
+
 class GaussianBase(Likelihood, ABC):
     """Base class for Gaussian likelihoods where the model only predicts `mu`.
     

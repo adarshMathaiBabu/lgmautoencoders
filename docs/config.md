@@ -52,7 +52,8 @@ generative models in class.
     - Are things like `ReconstructionLogging` (for autoencoders) or `GenerationLogging` (for
     anything that can generate) appropriate?
     - Do you want to use `GenerativeMetrics`, and if so, how often/how many samples?
-    - Is `BestCheckpoint` appropriate, i.e. is there a sensible metric to use as a measure?
+    - Is `BestCheckpoint` appropriate, i.e. is there a sensible metric to use as a measure? If so,
+    you have to change the `monitor` entry to the correct metric name!
     - A `ModelSummary` callback is included by default, but you might want to include one with a
     different `max_depth`, as this can give a better overview over the components of your model.
     - Some models profit from using exponential moving averages of the weights. We have an
