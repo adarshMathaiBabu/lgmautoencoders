@@ -79,14 +79,11 @@ class ReconstructionLogging(ImageGrid):
 
     @override
     def __init__(self,
-                 config: GridConfig,
-                 conditional: bool = False):
+                 config: GridConfig):
         """Configure the callback.
 
         Parameters:
             config: `GridConfig` instance. Note that `n_rows` must be even!
-            conditional: If `True`, assumes conditional model, meaning that labels will be handed
-                to the model call!
 
         Raises:
             ValueError: If `grid_config.n_rows` is not even.
@@ -94,7 +91,6 @@ class ReconstructionLogging(ImageGrid):
         if config.n_rows % 2:
             raise ValueError(f"n_rows must be even, but got {config.n_rows}.")
         super().__init__(config)
-        self.conditional = conditional
         self.examples = None
 
     @override
@@ -115,18 +111,14 @@ class ReconstructionLogging(ImageGrid):
             return
 
         if trainer.is_global_zero and self.examples is None:
-            batch, labels  = next(iter(trainer.datamodule.val_dataloader()))
+            batch, _  = next(iter(trainer.datamodule.val_dataloader()))
             self.examples = batch[:self.n_rows**2 // 2].to(pl_module.device)
-            self.labels = labels[:self.n_rows**2 // 2].to(pl_module.device)
 
         # must make sure to go into eval mode and then back to training if we were in there
         was_training = pl_module.training
         pl_module.eval()
         with torch.inference_mode():
-            if self.conditional:
-                reconstructions = pl_module(self.examples, self.labels, map_to_expected=True)
-            else:
-                reconstructions = pl_module(self.examples, map_to_expected=True)
+            reconstructions = pl_module(self.examples, map_to_expected=True)
         if was_training:
             pl_module.train()
 
