@@ -1,4 +1,5 @@
 gdown
+jaxtyping
 jupyter
 lightning[pytorch-extra]
 matplotlib
