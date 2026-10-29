@@ -16,6 +16,26 @@ from lgm.types import DataBatchFloat, DataFloat, ImageFloat
 ### ===========================================================================
 ### Shape-preserving Transforms that only change the values
 ### ===========================================================================
+class Binarize(Transform):
+    """Turn inputs into binary numbers according to a threshold."""
+    @override
+    def __init__(self,
+                 threshold: float = 0.5):
+        """Configure the transform.
+
+        Parameters:
+            threshold: Everything above this value will become 1; everything else 0.
+        """
+        super().__init__()
+        self.threshold = threshold
+
+    @override
+    def transform(self,
+                  inputs: DataFloat,
+                  _params: Any) -> DataFloat:
+        return torch.where(inputs > self.threshold, 1., 0.)
+
+
 class InvertibleTransform(Transform, ABC):
     """Base class for transforms that can be inverted.
     

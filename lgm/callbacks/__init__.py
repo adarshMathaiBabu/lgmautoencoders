@@ -7,6 +7,6 @@ As a rough guide:
 - Autoencoders of any type should add `ReconstructionLogging`. Note that VAEs are both generative
   and autoencoders, so the last point also applies.
 """
-from .image import ReconstructionLogging
+from .image import GenerationLogging, ReconstructionLogging
 from .logging import FitInfo, HyperParamLogger
 from .saving import BestCheckpoint

@@ -134,6 +134,72 @@ class ReconstructionLogging(ImageGrid):
         self.save_figure(figure, trainer, epoch)
 
 
+class GenerationLogging(ImageGrid):
+    """Regularly creates plots showing generated image examples.
+    
+    The `LightningModule` MUST have a `generate()` function that takes an argument for number of
+    samples in first position, and no further mandatory arguments. We currently do not support
+    passing additional arguments for optional settings, so make sure the model has reasonable
+    default settings.  
+    Figures are stored in Tensorboard as well as saved directly to disk (log directory) for
+    convenience. 
+    """
+    name: ClassVar[str] = "generations"
+
+    @override
+    def __init__(self,
+                 config: GridConfig,
+                 seed: int | None = None):
+        """Configure the callback.
+
+        Parameters:
+            config: `GridConfig` instance.
+            seed: If given, always use this seed for generations. This allows to see how generations
+                for the same seed proceed over time.
+        """
+        super().__init__(config)
+        self.seed = seed
+
+    @override
+    def on_train_epoch_start(self,
+                             trainer: Trainer,
+                             pl_module: LightningModule):
+        """Called at the start of each epoch. Create generations and store them.
+        
+        We use `on_train_epoch_start` because this results in generations plotted before any
+        training has happened. This can be informative to see any architectural biases in the model:
+        Are the generations just blank images? Smooth? Noisy?
+        """
+        epoch = trainer.current_epoch
+        if epoch % self.every_n_epochs != 0 or not trainer.is_global_zero:
+            return
+
+        # must make sure to go into eval mode and then back to training if we were in there
+        # also stores seed to restore later
+        was_training = pl_module.training
+        pl_module.eval()
+        n_samples = self.n_rows**2
+        if self.seed is not None:
+            rng_state = torch.get_rng_state()
+            cuda_state = torch.cuda.get_rng_state()
+            torch.manual_seed(self.seed)
+
+        with torch.inference_mode():
+            generated = pl_module.generate(n_samples=n_samples)
+        if self.seed is not None:
+            torch.set_rng_state(rng_state)
+            torch.cuda.set_rng_state(cuda_state)
+        if was_training:
+            pl_module.train()
+
+        figure = self.plotter.image_grid(generated,
+                                         title="Generation Examples",
+                                         n_rows=self.n_rows,
+                                         epoch_ind=epoch,
+                                         suppress_plots=True)
+        self.save_figure(figure, trainer, epoch)
+
+
 @dataclass(frozen=True)
 class GridConfig:
     """Bundles parameters for `ImageGrid` callbacks.

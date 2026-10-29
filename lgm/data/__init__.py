@@ -4,6 +4,6 @@ At the time of writing, we only have `ImageDataModule` for... images. We may add
 datasets in the future.
 """
 from .image import ImageDataModule
-from .transforms import (AdaptiveCenterCrop, Identity, Normalize, ToGrayscale, Logit, Transpose,
-                         UniformDequantize)
+from .transforms import (AdaptiveCenterCrop, Binarize, Identity, Normalize, ToGrayscale, Logit,
+                         Transpose, UniformDequantize)
 from .utils import dataset_mean_std
